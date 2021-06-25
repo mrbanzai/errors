@@ -83,6 +83,10 @@ var (
 	// ErrDupeKey is returned when a unique index prevents a value from being
 	// inserted or updated. CanRetry returns false on this error.
 	ErrDupeKey = errors.New("duplicate key value")
+
+	// ErrDeadlock is returned when MySQL kills the query due to a detected
+	// deadlock.  Guidance suggests restarting the transaction.
+	ErrDeadlock = errors.New("deadlock detected")
 )
 
 // Error returns an error in this package if possible. The boolean return
@@ -113,6 +117,8 @@ func Error(err error) (bool, error) {
 		return true, ErrReadOnly
 	case 1062: // ER_DUP_ENTRY
 		return true, ErrDupeKey
+	case 1213:
+		return true, ErrDeadlock
 	}
 
 	// A MySQL error, but not one we handle explicitly
@@ -160,7 +166,7 @@ func MySQLErrorCode(err error) uint16 {
 // It returns false for all other errors, including nil.
 func CanRetry(err error) bool {
 	switch err {
-	case ErrCannotConnect, ErrConnLost, ErrReadOnly, ErrQueryKilled:
+	case ErrCannotConnect, ErrConnLost, ErrReadOnly, ErrQueryKilled, ErrDeadlock:
 		return true
 	}
 	return false
