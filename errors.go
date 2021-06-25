@@ -130,8 +130,8 @@ func Error(err error) (bool, error) {
 func Down(err error) bool {
 	// Being unable to reach MySQL is a network issue, so we get a net.OpError.
 	// If MySQL is reachable, then we'd get a mysql.* or driver.* error instead.
-	_, ok := err.(*net.OpError)
-	return ok
+	var netOpErr *net.OpError
+	return errors.As(err, &netOpErr)
 }
 
 // Lost returns true if the error indicates the MySQL connection was lost.
@@ -140,7 +140,7 @@ func Lost(err error) bool {
 	// mysql.ErrInvalidConn is returned for sql.DB functions. driver.ErrBadConn
 	// is returned for sql.Conn functions. These are the normal errors when
 	// MySQL is lost.
-	if err == mysql.ErrInvalidConn || err == driver.ErrBadConn {
+	if errors.Is(err, mysql.ErrInvalidConn) || errors.Is(err, driver.ErrBadConn) {
 		return true
 	}
 
@@ -156,7 +156,8 @@ func Lost(err error) bool {
 // MySQLErrorCode returns the MySQL server error code for the error, or zero
 // if the error is not a MySQL error. See https://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html
 func MySQLErrorCode(err error) uint16 {
-	if val, ok := err.(*mysql.MySQLError); ok {
+	var val *mysql.MySQLError
+	if errors.As(err, &val) {
 		return val.Number
 	}
 	return 0 // not a mysql error
