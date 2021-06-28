@@ -87,6 +87,9 @@ var (
 	// ErrDeadlock is returned when MySQL kills the query due to a detected
 	// deadlock.  Guidance suggests restarting the transaction.
 	ErrDeadlock = errors.New("deadlock detected")
+
+	// ErrSyntax is returned when there's a MySQL syntax error.
+	ErrSyntax = errors.New("syntax error")
 )
 
 // Error returns an error in this package if possible. The boolean return
@@ -119,6 +122,8 @@ func Error(err error) (bool, error) {
 		return true, ErrDupeKey
 	case 1213:
 		return true, ErrDeadlock
+	case 1064:
+		return true, ErrSyntax
 	}
 
 	// A MySQL error, but not one we handle explicitly
